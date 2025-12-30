@@ -26,7 +26,7 @@ fn find_maximum_joltage_for_digit_count(bank: &[u8], digit_count: usize) -> u64 
             let (max_leading_index, &max_leading) = bank[..bank.len() - remaining_digits]
                 .iter()
                 .enumerate()
-                .min_by_key(|(index, &value)| (-(value as i32), *index))
+                .min_by_key(|(index, value)| (-(**value as i32), *index))
                 .unwrap();
 
             10u64.pow(digit_count as u32 - 1) * max_leading as u64
