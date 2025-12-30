@@ -36,15 +36,55 @@ impl TryFrom<&str> for Point {
 pub fn part_one(input: &str) -> Option<u64> {
     let points = parse_red_points(input);
 
-    let mut max_area: u64 = 0;
+    // Keep track of the best pivots. A pivot is a candidate for the
+    // top-left (TL), top-right (TR), bottom-left (BL), and bottom-right (BR)
+    // corners.
+    // This greatly reduces the number of computations we need because we can
+    // find the pivots in O(n) time by doing a single-pass through the points.
+    // After we do that, we know that we'll have a rectangle using either
+    // a TLxBR pair or TRxBL pair, which we can easily find in a Cartesian
+    // product.
+    let mut tl_pivots: Vec<&Point> = Vec::new();
+    let mut tr_pivots: Vec<&Point> = Vec::new();
+    let mut bl_pivots: Vec<&Point> = Vec::new();
+    let mut br_pivots: Vec<&Point> = Vec::new();
 
-    for i in 0..points.len() {
-        for j in (i + 1)..points.len() {
-            max_area = max_area.max(calculate_area(&points[i], &points[j]));
+    // Do a single-pass through the points keeping track of the best pivots
+    for point in points.iter() {
+        // First, remove all points that are strictly worse than the current point by
+        // keeping only the ones that are "better" in at least one of the axes.
+        // Then add the current one if it is not strictly worse than any of the remaining
+        // pivots.
+        tl_pivots.retain(|p| p.0 < point.0 || p.1 < point.1);
+        if !tl_pivots.iter().any(|p| p.0 <= point.0 && p.1 <= point.1) {
+            tl_pivots.push(point);
+        }
+
+        tr_pivots.retain(|p| p.0 > point.0 || p.1 < point.1);
+        if !tr_pivots.iter().any(|p| p.0 >= point.0 && p.1 <= point.1) {
+            tr_pivots.push(point);
+        }
+
+        bl_pivots.retain(|p| p.0 < point.0 || p.1 > point.1);
+        if !bl_pivots.iter().any(|p| p.0 <= point.0 && p.1 >= point.1) {
+            bl_pivots.push(point);
+        }
+
+        br_pivots.retain(|p| p.0 > point.0 || p.1 > point.1);
+        if !br_pivots.iter().any(|p| p.0 >= point.0 && p.1 >= point.1) {
+            br_pivots.push(point);
         }
     }
 
-    Some(max_area)
+    Some(
+        tl_pivots
+            .into_iter()
+            .cartesian_product(br_pivots)
+            .chain(tr_pivots.into_iter().cartesian_product(bl_pivots))
+            .map(|(pivot1, pivot2)| calculate_area(pivot1, pivot2))
+            .max()
+            .unwrap_or(1),
+    )
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
@@ -203,8 +243,8 @@ fn parse_red_points(input: &str) -> Vec<Point> {
 }
 
 fn calculate_area(origin: &Point, dest: &Point) -> u64 {
-    (origin.0 as i64 - dest.0 as i64 + 1).abs() as u64
-        * (origin.1 as i64 - dest.1 as i64 + 1).abs() as u64
+    ((origin.0 as i64 - dest.0 as i64).abs() as u64 + 1)
+        * ((origin.1 as i64 - dest.1 as i64).abs() as u64 + 1)
 }
 
 // fn print_grid(grid: &Vec<Vec<Tile>>) {
