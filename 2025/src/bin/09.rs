@@ -36,22 +36,15 @@ impl TryFrom<&str> for Point {
 pub fn part_one(input: &str) -> Option<u64> {
     let points = parse_red_points(input);
 
-    let mut max_area: Option<u64> = None;
+    let mut max_area: u64 = 0;
 
     for i in 0..points.len() {
         for j in (i + 1)..points.len() {
-            let area = (points[i].0 as i64 - points[j].0 as i64 + 1).abs() as u64
-                * (points[i].1 as i64 - points[j].1 as i64 + 1).abs() as u64;
-
-            max_area = match max_area {
-                None => Some(area),
-                Some(max) if area > max => Some(area),
-                _ => max_area,
-            };
+            max_area = max_area.max(calculate_area(&points[i], &points[j]));
         }
     }
 
-    max_area
+    Some(max_area)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
@@ -59,6 +52,8 @@ pub fn part_two(input: &str) -> Option<u64> {
     let max_x = red_points.iter().map(|p| p.0).max().unwrap();
     let max_y = red_points.iter().map(|p| p.1).max().unwrap();
 
+    // the grid can be thought-of as a `max_x` per `max_y` matrix; however, to optimize for
+    // space, we'll use a sparse matrix representation by mapping pairs of indices to the tile
     let mut grid = vec![vec![Tile::None; max_x as usize + 1]; max_y as usize + 1];
 
     // println!("Grid - all empty:");
@@ -173,7 +168,7 @@ pub fn part_two(input: &str) -> Option<u64> {
     // now let's calculate the maximum area
     // but skipping the rectangles that contain any outter point
 
-    let mut max_area: Option<u64> = None;
+    let mut max_area: u64 = 0;
 
     for i in 0..red_points.len() {
         for j in (i + 1)..red_points.len() {
@@ -192,18 +187,11 @@ pub fn part_two(input: &str) -> Option<u64> {
                 continue;
             }
 
-            let area = (origin.0 as i64 - dest.0 as i64 + 1).abs() as u64
-                * (origin.1 as i64 - dest.1 as i64 + 1).abs() as u64;
-
-            max_area = match max_area {
-                None => Some(area),
-                Some(max) if area > max => Some(area),
-                _ => max_area,
-            };
+            max_area = max_area.max(calculate_area(origin, dest));
         }
     }
 
-    max_area
+    Some(max_area)
 }
 
 fn parse_red_points(input: &str) -> Vec<Point> {
@@ -212,6 +200,11 @@ fn parse_red_points(input: &str) -> Vec<Point> {
         .map(Point::try_from)
         .collect::<Result<Vec<Point>, _>>()
         .expect("Failed to parse points")
+}
+
+fn calculate_area(origin: &Point, dest: &Point) -> u64 {
+    (origin.0 as i64 - dest.0 as i64 + 1).abs() as u64
+        * (origin.1 as i64 - dest.1 as i64 + 1).abs() as u64
 }
 
 // fn print_grid(grid: &Vec<Vec<Tile>>) {
